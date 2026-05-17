@@ -166,6 +166,14 @@ To study verification _reasoning_, treat retrieval as solved. Hanselowski as pri
 
 ## Carry-forward caveats — pre-scripts the Limitations / Discussion / Error Analysis sections
 
+- Use 0.627 / 0.613 as the classical-baseline row in the Results table.
+- Note in Discussion: detection plateau near majority-class is the
+  signature of surface-pattern learning, not evidence-based reasoning —
+  thesis anchor.
+- Day 7 (DistilBERT) must reuse the same 6→2 collapse rule and the same
+  loader code from `experiments/01_liar_svm.py` — diverging here would
+  invalidate the within-paradigm comparison.
+
 Every bullet here is a sentence (or paragraph) waiting to be written into one of the later sections. Tagged with target section.
 
 **[Limitations + Methodology] FEVER class imbalance in training set.** Train set is S 80,035 / R 29,775 / NEI 35,639 (~55/20/25). Dev/test are balanced 1:1:1. Doesn't matter for off-the-shelf MNLI (we're not fine-tuning). If we ever drop NEI for binary cross-paradigm comparison, note we're using FEVER's balanced dev split, S+R subset, ~6,666 claims. Honest framing.
@@ -207,6 +215,35 @@ Every bullet here is a sentence (or paragraph) waiting to be written into one of
 **[Discussion] SciFact's claim-only baseline as positive-example contrast [#23 vs #24].** SciFact's claim-only baseline reaches only 44.5% (vs 33% chance) on 3-way — barely above floor. Compare to Schuster [#24]'s measured 61.7% claim-only BERT on FEVER. **Careful claim construction (citance-derived + hand-negation without "not" cues) resists the artifact problem.** Artifacts are not inevitable.
 
 **[Limitations] Field-acknowledgement framing.** Guo [#5] (flagship survey) explicitly cites Schuster 2020 [#14] and Schuster 2019 [#24] as acknowledged limitations of both paradigms. Frame our argument as "operationalising critiques the field's standard survey already accepts" — stronger than presenting as our own observations.
+
+Reviewing 20 SVM misclassifications, the most thesis-relevant pattern is
+that the model leans on stylistic cues uncorrelated with truth:
+
+- **Quantitative claims** ("Wisconsin is on pace to double the number of
+  layoffs"; "57 percent of federal spending goes to the military") are
+  predicted True because they sound like analyst speech, regardless of
+  whether the numbers are correct. Verification could check these
+  against evidence; detection cannot.
+- **Reported-speech / attributed-claim constructions** ("Says Biden
+  admits the American people are being scammed") are read as credible
+  because the surface form mimics factual reporting; the underlying
+  attribution is fabricated.
+- **Explicit epistemic-certainty markers** ("We know that for a fact")
+  bias the model toward True even when the underlying claim is wrong.
+  Cleanest example: a verification system would look up Georgia voter
+  registration; the SVM trusts the confidence cue.
+- **Hedging or attack-ad framing** ("literally years"; "cut choice for
+  seniors") pushes the model toward False even when the claim is
+  accurate.
+
+Direction of error skews False→True in this sample (4 of 6) — the model
+is more easily fooled by confident-sounding falsehoods than by true
+statements in adversarial framing. Worth checking whether the
+transformer reduces this asymmetry.
+
+Carry-forward to Error Analysis section: numerical-claim failure and
+epistemic-certainty failure are concrete examples that illustrate why
+surface patterns are not equivalent to fact-checking.
 
 ---
 
