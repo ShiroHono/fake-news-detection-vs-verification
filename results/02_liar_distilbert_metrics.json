@@ -1,0 +1,57 @@
+{
+  "config": {
+    "model": "distilbert-base-uncased",
+    "max_len": 128,
+    "batch_size": 16,
+    "lr": 2e-05,
+    "epochs": 3,
+    "warmup_ratio": 0.1,
+    "random_state": 42
+  },
+  "train_length_percentiles": {
+    "50": 23,
+    "90": 37,
+    "95": 42,
+    "99": 52,
+    "100": 98
+  },
+  "per_epoch_dev": [
+    {
+      "epoch": 1,
+      "train_loss": 0.6618618563431381,
+      "dev_accuracy": 0.632398753894081,
+      "dev_macro_f1": 0.6291596910153612
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.5978265410099258,
+      "dev_accuracy": 0.6308411214953271,
+      "dev_macro_f1": 0.6210880203210021
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.48675713880766286,
+      "dev_accuracy": 0.6417445482866043,
+      "dev_macro_f1": 0.6388980594989179
+    }
+  ],
+  "best_epoch": 3,
+  "distilbert_dev": {
+    "accuracy": 0.6417445482866043,
+    "macro_f1": 0.6388980594989179
+  },
+  "distilbert_test": {
+    "accuracy": 0.6406858924395947,
+    "macro_f1": 0.6295959744615028
+  },
+  "distilbert_confusion_test": [
+    [
+      300,
+      256
+    ],
+    [
+      205,
+      522
+    ]
+  ]
+}

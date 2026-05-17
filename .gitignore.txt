@@ -1,27 +1,25 @@
 # Python virtual environment
-.venv
-__pycache__
-.pyc
+.venv/
+__pycache__/
+*.pyc
 
 # Jupyter
-.ipynb_checkpoints
+.ipynb_checkpoints/
 
 # Datasets (downloaded, don't commit)
-data
-.csv
-.tsv
-.json
-.jsonl
+data/
 
-# Model outputs  artifacts (large, regenerable)
-models
-results.pkl
-results.joblib
+# Model outputs & artifacts (large, regenerable)
+models/
+*.pkl
+*.joblib
+*.pt
+*.safetensors
 
 # OS junk
 .DS_Store
 Thumbs.db
 
 # Editor junk
-.vscode
-.idea
+.vscode/
+.idea/

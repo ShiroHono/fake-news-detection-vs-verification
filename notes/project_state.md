@@ -74,14 +74,15 @@ not needed — oracle evidence is in the claim file.
 
 ## Handoff pattern for new chats
 
-Open with: "Day N. Continuing experiments / paper draft. Read
-`project_state.md` and `paper_draft.md` first. [What we're doing this
+Open with: "Day N. Continuing experiments / paper draft. Read 'professor_brief.md' as it is the main scope of the project.
+And then `project_state.md` and `paper_draft.md`. [What we're doing this
 session.]"
 
-Day 7 expected opener: "Day 7. Continuing experiments / paper draft.
-Day 6 finished classical detection (SVM 0.627 on LIAR-binary, error-
-analysis seed in results/01_liar_svm_misclassified.tsv). Today:
-DistilBERT fine-tune on the same LIAR-binary split, in Colab."
+Day 8 expected opener: "Day 8. Continuing experiments / paper draft.
+Day 7 finished transformer detection (DistilBERT 0.641 acc / 0.630
+macro-F1 on LIAR-binary; SVM was 0.627 / 0.613 — detection plateau
+confirmed across both architectures). Today: verification arm —
+off-the-shelf MNLI on FEVER with oracle evidence, in Colab."
 
 ## Day 6 — LIAR-binary classical baseline (completed)
 
@@ -112,8 +113,59 @@ Carry-forward:
 - Note in Discussion: detection plateau near majority-class is the
   signature of surface-pattern learning, not evidence-based reasoning —
   thesis anchor.
-- Error-analysis note: SVM predicts True more often than False; revisit
-  after transformer experiment to see if the bias persists.
+- Error-analysis note: SVM predicts True more often than False (recall
+  0.73 True vs 0.50 False). Day 7 update: DistilBERT shows same direction,
+  narrower gap (0.72 vs 0.54). True-bias is a detection-arm property,
+  not an SVM artifact.
+
+## Day 7 — LIAR-binary DistilBERT fine-tune (completed)
+
+Same loader and 6→2 collapse as Day 6 (byte-identical loader code copied from
+`experiments/01_liar_svm.py`). Splits unchanged.
+
+Tokenizer: DistilBERT WordPiece, max_len=128. Train-set length percentiles
+p50=23, p90=37, p95=42, p99=52, max=98 — 128 covers 100% of training
+statements without truncation.
+
+Hyperparameters: distilbert-base-uncased, lr 2e-5, batch 16, 3 epochs,
+AdamW (weight decay 0.01), linear warmup 10%, grad clip 1.0, seed 42.
+Single run. Checkpoint selection: best dev macro-F1 across epochs.
+
+Per-epoch dev macro-F1: 0.629 → 0.621 → 0.639. Non-monotonic; best
+checkpoint is epoch 3. Flag in Methodology footnote.
+
+Results (test):
+| Model | Accuracy | Macro-F1 |
+|-----------------------------|----------|----------|
+| Majority class (floor) | 0.5666 | 0.3617 |
+| TF-IDF (1-2gram) + LinearSVC| 0.6274 | 0.6126 |
+| DistilBERT (fine-tuned) | 0.6407 | 0.6296 |
+
+Per-class on test for DistilBERT: F1(False)=0.566, F1(True)=0.694.
+DistilBERT lifts ~1.3 pts accuracy and ~1.7 pts macro-F1 over SVM.
+True-bias persists: 778/1283 (60.6%) predictions are True; recall on
+True=0.72 vs recall on False=0.54 — narrower than SVM (0.73 vs 0.50)
+but the same direction.
+
+Carry-forward:
+
+- Use 0.641 / 0.630 as the DistilBERT row in the Results table.
+- Day 6 ↔ Day 7 contrast (~1.3 pts accuracy, ~1.7 pts macro-F1) is the
+  thesis-anchor for the Discussion section: detection plateau is a
+  paradigm-level property, not a feature-engineering bottleneck. A 66M-
+  parameter pretrained transformer gains marginally over n-grams on
+  LIAR-binary.
+- True-bias asymmetry persists across both detection architectures.
+  Confident-sounding falsehoods continue to fool the detection arm.
+  Useful Discussion line.
+- 20-misclassified inventory mirrors Day 6: numerical claims (8/20),
+  reported-speech / "Says…" attributions, directional/scope claims,
+  attack-ad framing. Same failure inventory as SVM — the carry-forward
+  expected-failure-modes list (numerical reasoning, directionality)
+  pre-flagged this and is now empirically confirmed on the detection arm.
+- False→True error skew persists: 12/20 in Day 7 (60%) vs 4/6 in Day 6
+  (67%). Detection arm fails asymmetrically toward over-trusting
+  confident statements.
 
 ---
 
@@ -175,6 +227,20 @@ To study verification _reasoning_, treat retrieval as solved. Hanselowski as pri
   invalidate the within-paradigm comparison.
 
 Every bullet here is a sentence (or paragraph) waiting to be written into one of the later sections. Tagged with target section.
+
+**[Discussion + Methodology] DistilBERT non-monotonic convergence.** Dev
+macro-F1 went 0.629 → 0.621 → 0.639 across 3 epochs. Best-epoch checkpoint
+selection (epoch 3) absorbs this; flag as a one-sentence Methodology
+footnote. Doesn't change the result but keeps the methodology honest.
+
+**[Discussion — thesis anchor, now empirically grounded] Detection plateau
+across architectures.** TF-IDF + SVM 0.627 acc, DistilBERT 0.641 acc.
+A 66M-parameter pretrained transformer gains ~1.3 pts over n-grams.
+Both architectures over-predict True (recall asymmetry 0.72-0.73 vs
+0.50-0.54) and fail on the same claim classes (numerical specificity,
+reported-speech attribution, directional/scope claims). The paradigm-
+not-features framing in the Discussion section is now backed by data,
+not just by lit-review prediction.
 
 **[Limitations + Methodology] FEVER class imbalance in training set.** Train set is S 80,035 / R 29,775 / NEI 35,639 (~55/20/25). Dev/test are balanced 1:1:1. Doesn't matter for off-the-shelf MNLI (we're not fine-tuning). If we ever drop NEI for binary cross-paradigm comparison, note we're using FEVER's balanced dev split, S+R subset, ~6,666 claims. Honest framing.
 
