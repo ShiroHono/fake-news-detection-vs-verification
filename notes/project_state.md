@@ -10,6 +10,111 @@
 
 **Current phase: experiments / coding.** Methodology decisions are locked (subject to revision if code phase reveals problems — see "if things go south" notes per decision). No experiments run yet.
 
+## Operating environment
+
+**Machine:** Windows 11, local laptop (CPU-only — no GPU). Transformer-arm
+experiments will run in Google Colab (free T4 GPU) starting Day 7.
+
+**Python:** 3.10+ in a project-local venv at `.venv/`. Activate before any
+work:
+
+- Windows CMD: `.venv\Scripts\activate`
+- macOS / Linux: `source .venv/bin/activate`
+
+**Key dependencies:** `numpy`, `pandas`, `scikit-learn`, `datasets`,
+`matplotlib`, `jupyter`. Pinned in `requirements.txt` via `pip freeze`.
+Note: `datasets >= 4.0` removed support for loader-script datasets; this
+affects which mirrors load (see "Dataset loaders" below).
+
+**Repository:** GitHub, private. One commit per experiment day with
+message `Day N: <summary>`. `.gitignore` excludes `.venv/`, `data/`,
+`__pycache__/`, model checkpoints, and any large regeneratable artifacts.
+Datasets are _not_ in git — they're re-downloaded on first run.
+
+## Folder structure
+
+    fake-news-project/
+    ├── .venv/              (ignored)
+    ├── data/               (ignored — datasets cached here on first run)
+    ├── experiments/        (one .py per experiment, numbered: 01_*, 02_*, …)
+    ├── notes/              (this file, paper_draft.md, literature_review.md, professor_brief.md)
+    ├── results/            (committed: small JSON metrics, PNG confusion matrices, TSV misclassified examples)
+    ├── .gitignore
+    ├── requirements.txt
+    └── README.md
+
+## Dataset loaders — known issues
+
+**LIAR:** the canonical HuggingFace repos (`liar`, `ucsbnlp/liar`) ship as
+loader scripts and **do not load on `datasets >= 4.0`**. Workaround
+(implemented in `experiments/01_liar_svm.py`): download UCSB zip directly,
+parse three TSVs with pandas. 14 columns, no header, label is column 1,
+statement is column 2.
+
+**FEVER (anticipated, Day 8+):** same loader-script problem expected.
+Fallback order: (1) `pietrolesci/fever` (parquet, no script), (2) other
+pre-extracted oracle-evidence mirrors, (3) pivot to SciFact rather than
+fight loaders for more than one session. The 5M-page Wikipedia dump is
+not needed — oracle evidence is in the claim file.
+
+## Coding conventions
+
+- **One self-contained `.py` script per experiment**, numbered.
+  `01_liar_svm.py`, `02_liar_distilbert.py`, `03_fever_mnli.py`, …
+- **Minimal working example > polished framework.** No CLI parsers,
+  config files, or class hierarchies unless an experiment actually
+  needs them.
+- **Outputs go to `results/`**: a `*_metrics.json` (numbers), a
+  `*_confusion_*.png` (visual), and a `*_misclassified.tsv` (error-
+  analysis seed). Naming matches the script number.
+- **Transformer experiments live in Colab as `.ipynb`** because that's
+  where the GPU is. Notebooks get committed to `experiments/` too;
+  output cells stripped before commit when feasible.
+- **`RANDOM_STATE = 42`** everywhere for reproducibility.
+
+## Handoff pattern for new chats
+
+Open with: "Day N. Continuing experiments / paper draft. Read
+`project_state.md` and `paper_draft.md` first. [What we're doing this
+session.]"
+
+Day 7 expected opener: "Day 7. Continuing experiments / paper draft.
+Day 6 finished classical detection (SVM 0.627 on LIAR-binary, error-
+analysis seed in results/01_liar_svm_misclassified.tsv). Today:
+DistilBERT fine-tune on the same LIAR-binary split, in Colab."
+
+## Day 6 — LIAR-binary classical baseline (completed)
+
+Loader: direct UCSB zip download + pandas (HuggingFace `datasets` ≥4.0
+removed loader-script support, so the canonical `liar` repo no longer
+loads). Text-only; metadata not used. 6→2 label collapse:
+False ∈ {pants-fire, false, barely-true};
+True ∈ {half-true, mostly-true, true}.
+
+Splits (Wang's original): train=10269, dev=1284, test=1283.
+Test class balance: True=56.7%, False=43.3%.
+
+Results (test):
+| Model | Accuracy | Macro-F1 |
+|-----------------------------|----------|----------|
+| Majority class (floor) | 0.5666 | 0.3617 |
+| TF-IDF (1-2gram) + LinearSVC| 0.6274 | 0.6126 |
+
+Per-class on test for SVM: F1(False)=0.537, F1(True)=0.688.
+SVM lifts ~6 pts above the floor in accuracy and ~25 pts in macro-F1
+(floor has F1=0 on False by construction). Model is biased toward
+predicting True (recall 0.73 vs 0.50). Consistent with Wang [#13]'s
+~62% SVM accuracy on LIAR-binary.
+
+Carry-forward:
+
+- Use 0.627 / 0.613 as the classical-baseline row in the Results table.
+- Note in Discussion: detection plateau near majority-class is the
+  signature of surface-pattern learning, not evidence-based reasoning —
+  thesis anchor.
+- Error-analysis note: SVM predicts True more often than False; revisit
+  after transformer experiment to see if the bias persists.
+
 ---
 
 ## Thesis (anchor for every section)
